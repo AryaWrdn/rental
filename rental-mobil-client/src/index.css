@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navyDark: #0a192f;
+  --color-yellowNeon: #e6f400;
+}
