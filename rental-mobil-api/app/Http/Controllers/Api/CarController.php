@@ -9,7 +9,7 @@ class CarController extends Controller
 {
     public function index()
     {
-        $cars = Car::latest()->get();
+        $cars = Car::all();
 
         // Mengembalikan data mobil dalam bentuk JSON
         return response()->json([
@@ -18,4 +18,5 @@ class CarController extends Controller
             'data' => $cars
         ], 200);
     }
+    
 }

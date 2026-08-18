@@ -1,24 +1,8 @@
-import { useState, useEffect } from 'react';
+import React from 'react'; // Pastikan React di-import
 
-function Cars() {
-    const [carData, setCarData] = useState([]);
-    const [loading, setLoading] = useState(true);
+function Cars({ carData, loading }) {
+    // TAMBAHKAN BARIS INI agar link gambar bisa terbaca
     const API_BASE_URL = "http://127.0.0.1:8000";
-
-    useEffect(() => {
-        fetch(`${API_BASE_URL}/api/cars`)
-            .then((response) => response.json())
-            .then((res) => {
-                if (res.success) {
-                    setCarData(res.data); // Ambil SEMUA data tanpa dipotong
-                }
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error("Gagal mengambil data dari API:", error);
-                setLoading(false);
-            });
-    }, []);
 
     return (
         <main className="max-w-7xl mx-auto px-6 py-12">
@@ -35,11 +19,10 @@ function Cars() {
                     Belum ada data mobil yang tersedia di database admin.
                 </div>
             ) : (
-                /* Grid System menampilkan seluruh data */
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {carData.map((car) => (
                         <div key={car.id} className="border-2 border-navyDark rounded-xl overflow-hidden flex flex-col shadow-lg hover:border-gray-700 transition duration-300">
-
+                            
                             {/* Bagian Atas: Navy Blue */}
                             <div className="bg-navyDark text-white p-6 text-center grow flex flex-col justify-between">
                                 <div>
@@ -56,6 +39,7 @@ function Cars() {
                                         )}
                                     </div>
                                 </div>
+                                
                                 <div>
                                     <p className="text-xs uppercase tracking-widest text-gray-400 mt-2">Mulai Dari IDR</p>
                                     <p className="text-2xl font-black text-yellowNeon">
@@ -84,7 +68,6 @@ function Cars() {
                                     Mobil + Driver : IDR {new Intl.NumberFormat('id-ID').format(car.driver_price)}/Hari
                                 </p>
                             </div>
-
                         </div>
                     ))}
                 </div>

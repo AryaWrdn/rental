@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo-removebg-preview.png';
-import Cars from './Cars'; // <--- Import file komponen baru kita
+import Cars from './Cars';
+import AuthModal from './AuthModal'; 
 
 function App() {
   const [carData, setCarData] = useState([]);
@@ -16,6 +17,45 @@ function App() {
   const homeRef = useRef(null);
   const locationsRef = useRef(null);
   const contactRef = useRef(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [selectedCarToBook, setSelectedCarToBook] = useState(null);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Jika ada mobil yang ditahan saat pencet book now, langsung teruskan booking ke WhatsApp
+    if (selectedCarToBook) {
+      processBookingWA(selectedCarToBook, userData);
+      setSelectedCarToBook(null);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+  };
+
+  // Fungsi mengarahkan ke WhatsApp
+  const processBookingWA = (car, currentUser) => {
+    const message = `Halo Admin VJ Rental Mobil! 👋\n\nSaya ingin memesan unit armada berikut:\n\n• pemesan: ${currentUser.name} (${currentUser.email})\n• Nama Mobil : ${car.name}\n• Tipe/Kapasitas : ${car.type} / ${car.capacity}\n• Transmisi : ${car.transmission}\n• Harga Sewa : IDR ${new Intl.NumberFormat('id-ID').format(car.price)}/Hari\n\nApakah unit ini tersedia untuk dijadwalkan? Terima kasih!`;
+    window.open(`https://wa.me/6281262772091?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  // Handler Tombol Book Now
+  const handleBookNow = (car) => {
+    if (!user) {
+      setSelectedCarToBook(car); // Simpan unit pilihan
+      setIsAuthModalOpen(true);  // Munculkan Modal Login
+    } else {
+      processBookingWA(car, user);
+    }
+  };
 
   const scrollToSection = (elementRef) => {
     // Kembalikan ke halaman home dulu jika user sedang berada di halaman 'our-cars'
@@ -75,17 +115,72 @@ function App() {
 
       <div>
         {/* ================= NAVBAR ================= */}
-        <nav className="bg-navyDark text-white px-6 py-4 flex justify-between items-center text-sm font-semibold tracking-wider border-b border-gray-800 sticky top-0 z-50 shadow-md">
-          <div className="flex space-x-6">
-            <button onClick={() => setActivePage('home')} className={`transition cursor-pointer ${activePage === 'home' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>HOME</button>
-            <button onClick={() => setActivePage('our-cars')} className={`transition cursor-pointer ${activePage === 'our-cars' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>OUR CARS</button>
-            <button onClick={() => scrollToSection(locationsRef)} className="hover:text-yellowNeon transition cursor-pointer">OUR LOCATIONS</button>
-            <button onClick={() => scrollToSection(contactRef)} className="hover:text-yellowNeon transition cursor-pointer">CONTACT US</button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-xs">IDR ▼</span>
-          </div>
-        </nav>
+    <nav className="bg-navyDark text-white px-6 py-4 flex justify-between items-center text-sm font-semibold tracking-wider border-b border-gray-800 sticky top-0 z-50 shadow-md">
+  {/* Left: Navigation Links */}
+  <div className="flex space-x-6 items-center">
+    <button 
+      onClick={() => setActivePage('home')} 
+      className={`transition cursor-pointer ${activePage === 'home' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}
+    >
+      HOME
+    </button>
+    <button 
+      onClick={() => setActivePage('our-cars')} 
+      className={`transition cursor-pointer ${activePage === 'our-cars' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}
+    >
+      OUR CARS
+    </button>
+    <button 
+      onClick={() => scrollToSection(locationsRef)} 
+      className="hover:text-yellowNeon transition cursor-pointer"
+    >
+      OUR LOCATIONS
+    </button>
+    <button 
+      onClick={() => scrollToSection(contactRef)} 
+      className="hover:text-yellowNeon transition cursor-pointer"
+    >
+      CONTACT US
+    </button>
+  </div>
+
+  {/* Right: User Profile Menu */}
+<div className="flex items-center space-x-4">
+  {user ? (
+    <div className="relative group">
+      <button className="flex items-center space-x-3 p-1.5 rounded-full hover:bg-gray-800 transition cursor-pointer">
+        <div className="w-8 h-8 rounded-full bg-yellowNeon text-navyDark flex items-center justify-center font-bold text-xs uppercase shadow">
+          {user.name.substring(0, 2)}
+        </div>
+        <span className="text-xs text-gray-200 group-hover:text-yellowNeon transition font-medium hidden sm:inline-block">
+          {user.name}
+        </span>
+      </button>
+
+      {/* Dropdown Menu */}
+      <div className="absolute right-0 mt-2 w-48 bg-navyDark border border-gray-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto py-2 z-50">
+        <div className="px-4 py-2 border-b border-gray-800">
+          <p className="text-xs font-bold text-white">{user.name}</p>
+          <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
+        </div>
+        <button 
+          onClick={handleLogout} 
+          className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-500/10 transition flex items-center space-x-2"
+        >
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  ) : (
+    <button
+      onClick={() => setIsAuthModalOpen(true)}
+      className="bg-yellowNeon text-navyDark text-xs font-extrabold px-4 py-2 rounded-lg hover:bg-white transition"
+    >
+      LOGIN / REGISTER
+    </button>
+  )}
+</div>
+</nav>
 
         {/* HEADER LOGO DAN HERO BANNER (Tetap muncul di atas semua halaman agar estetik) */}
         <header className="bg-[#07111e] shadow-sm">
@@ -130,9 +225,9 @@ function App() {
         {activePage === 'our-cars' ? (
 
           /* JIKA HALAMAN 'OUR CARS' AKTIF -> Tampilkan file komponen Cars.jsx */
-          <Cars />
+          <Cars carData={carData} loading={loading} />
 
-        ) : (
+        ) : ( 
 
           /* JIKA HALAMAN 'HOME' AKTIF -> Tampilkan Layout Utama + Dibatasi 4 Mobil */
           <div ref={homeRef}>
@@ -194,16 +289,12 @@ function App() {
                           <p className="text-2xl font-black text-yellowNeon">
                             {new Intl.NumberFormat('id-ID').format(car.price)} <span className="text-xs text-white">/Hari</span>
                           </p>
-                          <a
-                            href={`https://wa.me/6281262772091?text=${encodeURIComponent(
-                              `Halo Admin VJ Rental Mobil! 👋\n\nSaya ingin memesan unit armada terbaik berikut:\n\n• Nama Mobil : ${car.name}\n• Tipe/Kapasitas : ${car.type} / ${car.capacity}\n• Transmisi : ${car.transmission}\n• Harga Sewa : IDR ${new Intl.NumberFormat('id-ID').format(car.price)}/Hari\n\nApakah unit ini tersedia untuk dijadwalkan? Mohon informasi persyaratannya. Terima kasih!`
-                            )}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 px-4 rounded-lg hover:bg-white transition duration-300 text-xs tracking-wider shadow text-center block"
-                          >
-                            BOOK NOW &gt;&gt;
-                          </a>
+                          <button
+  onClick={() => handleBookNow(car)}
+  className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 px-4 rounded-lg hover:bg-white transition duration-300 text-xs tracking-wider shadow text-center block cursor-pointer"
+>
+  BOOK NOW &gt;&gt;
+</button>
                         </div>
                       </div>
                       <div className="bg-yellowNeon text-navyDark p-5 text-sm space-y-2 font-semibold border-t border-navyDark">
@@ -297,8 +388,15 @@ function App() {
           </div>
         </div>
       </footer>
+      {/* Modal Auth */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
 
     </div>
+    
   );
 }
 

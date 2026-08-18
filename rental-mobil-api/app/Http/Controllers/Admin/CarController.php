@@ -4,16 +4,23 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Car;
+use App\Models\User;
+use App\Models\Driver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage; // Import Storage untuk hapus file
 
 class CarController extends Controller
 {
-    public function index()
-    {
-        $cars = Car::latest()->get();
-        return view('admin.cars.index', compact('cars'));
-    }
+   public function index()
+{
+    $cars = Car::all(); // Keseluruhan Armada
+    $availableCars = Car::where('status', 'tersedia')->get(); // Armada Tersedia
+    $rentedCars = Car::where('status', 'disewa')->with('user')->get(); // Armada Sedang Disewa
+    $users = User::all(); // Data Client untuk pilihan modal booking
+    $drivers = Driver::all();
+
+    return view('admin.cars.index', compact('cars', 'availableCars', 'rentedCars', 'users','drivers'));
+}
 
     public function store(Request $request)
     {
@@ -61,4 +68,50 @@ class CarController extends Controller
 
         return redirect()->back()->with('success', 'Data mobil berhasil dihapus!');
     }
+    public function bookCar(Request $request, $id)
+{
+  $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'rental_type' => 'required|in:lepas_kunci,dengan_supir',
+        'driver_id' => 'required_if:rental_type,dengan_supir'
+    ]);
+
+    $car = Car::findOrFail($id);
+    $car->status = 'disewa';
+    $car->user_id = $request->user_id;
+    $car->rental_type = $request->rental_type; // Pastikan kolom ini ada di tabel cars
+    $car->driver_id = $request->driver_id;     // Pastikan kolom ini ada di tabel cars
+    $car->save();
+
+    // UPDATE STATUS SUPIR
+    if ($request->rental_type == 'dengan_supir' && $request->driver_id) {
+        $driver = \App\Models\Driver::findOrFail($request->driver_id);
+        $driver->status = 'bertugas';
+        $driver->save();
+    }
+
+    return redirect()->back()->with('success', "Mobil {$car->name} berhasil disewa oleh client.");
+}
+
+// Proses Mobil Dikembalikan (Kembali ke Tersedia)
+public function returnCar($id) {
+    $car = Car::findOrFail($id);
+    
+    // Kembalikan status supir jika ada
+    if ($car->driver_id) {
+        $driver = \App\Models\Driver::find($car->driver_id);
+        if ($driver) {
+            $driver->status = 'tersedia';
+            $driver->save();
+        }
+    }
+
+    $car->status = 'tersedia';
+    $car->user_id = null;
+    $car->rental_type = null;
+    $car->driver_id = null;
+    $car->save();
+
+    return redirect()->back()->with('success', 'Mobil telah dikembalikan!');
+}
 }
