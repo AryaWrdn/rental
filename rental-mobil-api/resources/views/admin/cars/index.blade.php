@@ -77,8 +77,129 @@
     class="px-5 py-3 font-bold text-xs uppercase tracking-wider border-b-2 transition rounded-t-lg">
     Kelola Supir (<span x-text="{{ isset($drivers) ? count($drivers) : 0 }}"></span>)
 </button>
+<!-- Tombol Tab Laporan Sewa di samping tab Kelola Supir -->
+<button 
+    @click="activeTab = 'reports'" 
+    :class="activeTab === 'reports' ? 'border-yellow-400 text-yellow-400 bg-yellow-400/10' : 'border-transparent text-gray-400 hover:text-white'"
+    class="px-5 py-3 font-bold text-xs uppercase tracking-wider border-b-2 transition rounded-t-lg">
+    Laporan Sewa (<span x-text="{{ isset($cars) ? count($cars->where('status', 'disewa')) : 0 }}"></span>)
+</button>
+
 
         </div>
+        <!-- KONTEN TAB: LAPORAN SEWA (1 MINGGU & 1 BULAN) -->
+<div x-show="activeTab === 'reports'" class="space-y-6" style="display: none;">
+    
+    <!-- Header Informasi -->
+    <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-white">Laporan & Statistik Sewa Armada</h2>
+            <p class="text-xs text-gray-400 mt-1">Rekapitulasi data penyewaan mobil aktif dalam periode 1 minggu dan 1 bulan terakhir.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="bg-yellow-400/10 text-yellow-400 border border-yellow-400/30 text-xs px-3 py-1.5 rounded-lg font-bold">
+                Total Mobil Disewa Saat Ini: {{ $cars->where('status', 'disewa')->count() }} Unit
+            </span>
+        </div>
+    </div>
+
+    <!-- Grid Kartu Ringkasan Pendapatan / Statistik -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Statistik Ringkasan 1 Minggu -->
+        <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-md">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
+                <h3 class="text-sm font-bold text-yellow-400 uppercase tracking-wider">📅 Laporan 1 Minggu Terakhir</h3>
+                <span class="text-[10px] bg-slate-800 text-gray-300 px-2 py-1 rounded">7 Hari Ke Belakang</span>
+            </div>
+            
+            <div class="space-y-3 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-800/50">
+                    <span class="text-gray-400">Unit Keluar (1 Minggu):</span>
+                    <strong class="text-white">{{ $cars->where('status', 'disewa')->count() }} Unit</strong>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-800/50">
+                    <span class="text-gray-400">Estimasi Pendapatan Mingguan:</span>
+                    <strong class="text-yellow-400 font-mono">
+                        IDR {{ number_format($cars->where('status', 'disewa')->sum('price') * 7, 0, ',', '.') }}
+                    </strong>
+                </div>
+                <p class="text-[10px] text-gray-500 italic mt-2">*Perhitungan berdasarkan akumulasi tarif harian dikalikan 7 hari.</p>
+            </div>
+        </div>
+
+        <!-- Statistik Ringkasan 1 Bulan -->
+        <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-md">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
+                <h3 class="text-sm font-bold text-blue-400 uppercase tracking-wider">📊 Laporan 1 Bulan Terakhir</h3>
+                <span class="text-[10px] bg-slate-800 text-gray-300 px-2 py-1 rounded">30 Hari Ke Belakang</span>
+            </div>
+            
+            <div class="space-y-3 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-800/50">
+                    <span class="text-gray-400">Unit Keluar (1 Bulan):</span>
+                    <strong class="text-white">{{ $cars->where('status', 'disewa')->count() }} Unit</strong>
+                </div>
+                <div class="flex justify-between py-1 border-b border-gray-800/50">
+                    <span class="text-gray-400">Estimasi Pendapatan Bulanan:</span>
+                    <strong class="text-blue-400 font-mono">
+                        IDR {{ number_format($cars->where('status', 'disewa')->sum('price') * 30, 0, ',', '.') }}
+                    </strong>
+                </div>
+                <p class="text-[10px] text-gray-500 italic mt-2">*Perhitungan berdasarkan estimasi rata-rata tarif harian selama 30 hari.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Tabel Detail Mobil yang Sedang Disewa (Digunakan sebagai Basis Laporan) -->
+    <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-md">
+        <h3 class="text-sm font-bold text-white mb-4 pb-2 border-b border-gray-800">Rincian Armada yang Sedang Disewa (Aktif)</h3>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-900 text-gray-400 uppercase border-b border-gray-800">
+                        <th class="p-3">Mobil & Tarif</th>
+                        <th class="p-3">Penyewa (Client)</th>
+                        <th class="p-3">Jenis Layanan</th>
+                        <th class="p-3">Supir Bertugas</th>
+                        <th class="p-3 text-right">Potensi Pendapatan (30 Hari)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800 text-gray-200">
+                    @forelse($cars->where('status', 'disewa') as $car)
+                        <tr>
+                            <td class="p-3">
+                                <p class="font-bold text-white">{{ $car->name }}</p>
+                                <p class="text-[10px] text-yellow-400">IDR {{ number_format($car->price, 0, ',', '.') }}/hari</p>
+                            </td>
+                            <td class="p-3 font-semibold text-blue-400">
+                                {{ $car->user->name ?? 'Tidak Diketahui' }}
+                            </td>
+                            <td class="p-3">
+                                <span class="px-2 py-1 rounded text-[10px] font-bold {{ $car->rental_type == 'dengan_supir' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' : 'bg-gray-800 text-gray-300' }}">
+                                    {{ $car->rental_type == 'dengan_supir' ? 'Dengan Supir' : 'Lepas Kunci' }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-gray-300">
+                                {{ $car->driver->name ?? '-' }}
+                            </td>
+                            <td class="p-3 text-right font-mono font-bold text-green-400">
+                                IDR {{ number_format($car->price * 30, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="p-8 text-center text-gray-500">Tidak ada data unit mobil yang sedang disewa saat ini.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
         <!-- KONTEN TAB: KELOLA & INPUT SUPIR -->
 <div x-show="activeTab === 'drivers'" class="grid grid-cols-1 lg:grid-cols-3 gap-8" style="display: none;">
     
@@ -172,7 +293,15 @@
     <!-- FORM INPUT (KIRI) -->
     <div class="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-md lg:col-span-1 h-fit">
         <h2 class="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Tambah Mobil Baru</h2>
-
+@if ($errors->any())
+    <div class="bg-red-500/20 border border-red-500 text-red-300 p-3 rounded-lg mb-4 text-[10px]">
+        <ul class="list-disc pl-4">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
         <form action="{{ route('admin.cars.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
             @csrf
             <div>
@@ -226,6 +355,14 @@
                 <label class="block font-semibold text-gray-300 mb-1">Sewa Bulanan</label>
                 <input type="text" name="monthly_price" placeholder="6 JUTA/Bulan" class="w-full bg-slate-900 border border-gray-700 p-2.5 rounded-lg text-white" required>
             </div>
+            <div>
+    <label class="block font-semibold text-gray-300 mb-1">Opsi Lepas Kunci</label>
+    <select name="is_lepas_kunci" class="w-full border border-gray-700 text-gray-300 p-2.5 rounded-lg bg-slate-900" required>
+        <option value="">-- Pilih Opsi --</option>
+        <option value="Lepas Kunci">Lepas Kunci</option>
+        <option value="Bisa dengan Supir">Bisa dengan Supir</option>
+    </select>
+</div>
             <button type="submit" class="w-full bg-yellow-400 hover:bg-white text-black font-extrabold py-3 rounded-lg transition cursor-pointer uppercase">Simpan Mobil</button>
         </form>
     </div>
