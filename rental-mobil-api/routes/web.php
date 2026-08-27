@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\CarController;
 use App\Models\Car;
 use App\Models\User;
 use App\Http\Controllers\Admin\DriverController;
-
+Route::get('/admin/ktp-view/{filename}', [App\Http\Controllers\Admin\CarController::class,'showKtp'])->name('admin.ktp.view');
 Route::post('/admin/drivers/store', [DriverController::class, 'store'])->name('admin.drivers.store');
 Route::post('/admin/cars/{id}/book', [App\Http\Controllers\Admin\CarController::class, 'bookCar'])->name('admin.cars.book');
 Route::post('/admin/cars/{id}/return', [App\Http\Controllers\Admin\CarController::class, 'returnCar'])->name('admin.cars.return');

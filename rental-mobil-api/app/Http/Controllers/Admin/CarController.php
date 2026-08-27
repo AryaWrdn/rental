@@ -6,21 +6,37 @@ use App\Http\Controllers\Controller;
 use App\Models\Car;
 use App\Models\User;
 use App\Models\Driver;
+use App\Models\Rental; // Import model Rental
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Import Storage untuk hapus file
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon; // Import Carbon untuk filter laporan waktu
 
 class CarController extends Controller
 {
-   public function index()
-{
-    $cars = Car::all(); // Keseluruhan Armada
-    $availableCars = Car::where('status', 'tersedia')->get(); // Armada Tersedia
-    $rentedCars = Car::where('status', 'disewa')->with('user')->get(); // Armada Sedang Disewa
-    $users = User::all(); // Data Client untuk pilihan modal booking
-    $drivers = Driver::all();
+    public function index()
+    {
+        $cars = Car::withCount('rentals')->get(); // Mengambil armada beserta jumlah total disewa (terlaris)
+        $availableCars = Car::where('status', 'tersedia')->get();
+        $rentedCars = Car::where('status', 'disewa')->with(['user', 'driver'])->get();
+        $users = User::all();
+        $drivers = Driver::all();
 
-    return view('admin.cars.index', compact('cars', 'availableCars', 'rentedCars', 'users','drivers'));
-}
+        // Data untuk Dashboard Monitoring & Laporan
+        $activeRentals = Rental::where('status', 'aktif')->with(['car', 'user', 'driver'])->get();
+        $weeklyRentals = Rental::where('created_at', '>=', Carbon::now()->subDays(7))->get();
+        $topCars = Car::withCount('rentals')->orderBy('rentals_count', 'desc')->take(5)->get();
+
+        return view('admin.cars.index', compact(
+            'cars', 
+            'availableCars', 
+            'rentedCars', 
+            'users', 
+            'drivers', 
+            'activeRentals', 
+            'weeklyRentals', 
+            'topCars'
+        ));
+    }
 
     public function store(Request $request)
     {
@@ -41,13 +57,8 @@ class CarController extends Controller
 
         if ($request->hasFile('icon')) {
             $file = $request->file('icon');
-
-            // Pake nama asli bawaan gambar kamu (e.g., 1780631073_bf.jpg) agar tidak berubah jadi nama mobil
             $filename = time() . '_' . str_replace(' ', '_', strtolower($file->getClientOriginalName()));
-
-            // PASTIKAN disimpan ke folder 'cars' di dalam public storage
             $file->storeAs('cars', $filename, 'public');
-
             $data['icon'] = $filename;
         }
 
@@ -55,11 +66,11 @@ class CarController extends Controller
 
         return redirect()->back()->with('success', 'Data mobil berhasil ditambahkan dengan nama gambar asli!');
     }
+
     public function destroy($id)
     {
         $car = Car::findOrFail($id);
 
-        // Hapus file dari folder cars yang benar
         if ($car->icon && Storage::disk('public')->exists('cars/' . $car->icon)) {
             Storage::disk('public')->delete('cars/' . $car->icon);
         }
@@ -68,50 +79,86 @@ class CarController extends Controller
 
         return redirect()->back()->with('success', 'Data mobil berhasil dihapus!');
     }
+
     public function bookCar(Request $request, $id)
-{
-  $request->validate([
-        'user_id' => 'required|exists:users,id',
-        'rental_type' => 'required|in:lepas_kunci,dengan_supir',
-        'driver_id' => 'required_if:rental_type,dengan_supir'
-    ]);
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'rental_type' => 'required|in:lepas_kunci,dengan_supir',
+            'driver_id' => 'required_if:rental_type,dengan_supir'
+        ]);
 
-    $car = Car::findOrFail($id);
-    $car->status = 'disewa';
-    $car->user_id = $request->user_id;
-    $car->rental_type = $request->rental_type; // Pastikan kolom ini ada di tabel cars
-    $car->driver_id = $request->driver_id;     // Pastikan kolom ini ada di tabel cars
-    $car->save();
+        $car = Car::findOrFail($id);
 
-    // UPDATE STATUS SUPIR
-    if ($request->rental_type == 'dengan_supir' && $request->driver_id) {
-        $driver = \App\Models\Driver::findOrFail($request->driver_id);
-        $driver->status = 'bertugas';
-        $driver->save();
-    }
+        // Hitung total harga (bisa disesuaikan jika menggunakan tarif per hari atau paket)
+        $totalPrice = $request->rental_type == 'dengan_supir' ? $car->driver_price : $car->price;
 
-    return redirect()->back()->with('success', "Mobil {$car->name} berhasil disewa oleh client.");
-}
+        // 1. Simpan riwayat transaksi ke tabel rentals (Database Monitoring)
+        Rental::create([
+            'car_id' => $car->id,
+            'user_id' => $request->user_id,
+            'driver_id' => $request->rental_type == 'dengan_supir' ? $request->driver_id : null,
+            'rental_type' => $request->rental_type,
+            'total_price' => $totalPrice,
+            'status' => 'aktif'
+        ]);
 
-// Proses Mobil Dikembalikan (Kembali ke Tersedia)
-public function returnCar($id) {
-    $car = Car::findOrFail($id);
-    
-    // Kembalikan status supir jika ada
-    if ($car->driver_id) {
-        $driver = \App\Models\Driver::find($car->driver_id);
-        if ($driver) {
-            $driver->status = 'tersedia';
+        // 2. Update status mobil
+        $car->status = 'disewa';
+        $car->user_id = $request->user_id;
+        $car->rental_type = $request->rental_type;
+        $car->driver_id = $request->rental_type == 'dengan_supir' ? $request->driver_id : null;
+        $car->save();
+
+        // 3. Update status supir jika menggunakan supir
+        if ($request->rental_type == 'dengan_supir' && $request->driver_id) {
+            $driver = Driver::findOrFail($request->driver_id);
+            $driver->status = 'bertugas';
             $driver->save();
         }
+
+        return redirect()->back()->with('success', "Mobil {$car->name} berhasil disewa dan tercatat di sistem monitoring.");
     }
 
-    $car->status = 'tersedia';
-    $car->user_id = null;
-    $car->rental_type = null;
-    $car->driver_id = null;
-    $car->save();
+    public function returnCar($id) 
+    {
+        $car = Car::findOrFail($id);
+        
+        // Update riwayat rental yang aktif menjadi 'selesai'
+        Rental::where('car_id', $car->id)->where('status', 'aktif')->update([
+            'status' => 'selesai'
+        ]);
 
-    return redirect()->back()->with('success', 'Mobil telah dikembalikan!');
+        // Kembalikan status supir jika ada
+        if ($car->driver_id) {
+            $driver = Driver::find($car->driver_id);
+            if ($driver) {
+                $driver->status = 'tersedia';
+                $driver->save();
+            }
+        }
+
+        // Reset status mobil
+        $car->status = 'tersedia';
+        $car->user_id = null;
+        $car->rental_type = null;
+        $car->driver_id = null;
+        $car->save();
+
+        return redirect()->back()->with('success', 'Mobil telah dikembalikan dan transaksi selesai!');
+    }
+    public function showKtp($filename)
+{
+    $path = 'ktp/' . $filename;
+
+    // Cek apakah file benar-benar ada di storage/app/public/ktp/
+    if (!Storage::disk('public')->exists($path)) {
+        abort(404, 'File KTP tidak ditemukan.');
+    }
+
+    $file = Storage::disk('public')->get($path);
+    $type = Storage::disk('public')->mimeType($path);
+
+    return response($file, 200)->header('Content-Type', $type);
 }
 }

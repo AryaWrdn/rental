@@ -1,7 +1,6 @@
-import React from 'react'; // Pastikan React di-import
+import React from 'react';
 
-function Cars({ carData, loading }) {
-    // TAMBAHKAN BARIS INI agar link gambar bisa terbaca
+function Cars({ carData, loading, onBookNow }) {
     const API_BASE_URL = "http://127.0.0.1:8000";
 
     return (
@@ -41,20 +40,27 @@ function Cars({ carData, loading }) {
                                 </div>
                                 
                                 <div>
-                                    <p className="text-xs uppercase tracking-widest text-gray-400 mt-2">Mulai Dari IDR</p>
+                                    <p className="text-xs uppercase text-gray-400 mt-2">Mulai Dari IDR</p>
                                     <p className="text-2xl font-black text-yellowNeon">
-                                        {new Intl.NumberFormat('id-ID').format(car.price)} <span className="text-xs text-white">/Hari</span>
+                                        {new Intl.NumberFormat('id-ID').format(car.price || car.driver_price || 0)} <span className="text-xs text-white">/Hari</span>
                                     </p>
-                                    <a
-                                        href={`https://wa.me/6281262772091?text=${encodeURIComponent(
-                                            `Halo Admin VJ Rental Mobil! 👋\n\nSaya ingin memesan unit armada berikut:\n\n• Nama Mobil : ${car.name}\n• Tipe/Kapasitas : ${car.type} / ${car.capacity}\n• Transmisi : ${car.transmission}\n• Harga Sewa : IDR ${new Intl.NumberFormat('id-ID').format(car.price)}/Hari\n\nApakah unit ini tersedia untuk dijadwalkan? Mohon informasi persyaratannya. Terima kasih!`
-                                        )}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 px-4 rounded-lg hover:bg-white transition duration-300 text-xs tracking-wider shadow text-center block"
-                                    >
-                                        BOOK NOW &gt;&gt;
-                                    </a>
+
+                                    {/* Tombol Book Now / Status Sedang Dipakai */}
+                                    {car.status === 'disewa' ? (
+                                        <button
+                                            disabled
+                                            className="mt-4 w-full bg-red-600/20 border border-red-500/40 text-red-400 font-extrabold py-2.5 px-4 rounded-lg text-xs tracking-wider shadow text-center block cursor-not-allowed opacity-90"
+                                        >
+                                            SEDANG DIPAKAI ⛔
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => onBookNow(car)}
+                                            className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 px-4 rounded-lg hover:bg-white transition duration-300 text-xs tracking-wider shadow text-center block cursor-pointer"
+                                        >
+                                            BOOK NOW &gt;&gt;
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
