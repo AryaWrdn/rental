@@ -10,6 +10,7 @@ function App() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [activePage, setActivePage] = useState('home');
+  const [driverData, setDriverData] = useState([]);
   
   // State Modal Booking
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -28,21 +29,20 @@ function App() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Handler Tombol Book Now (Satu fungsi tunggal yang bersih)
+  // Handler Tombol Book Now
   const handleBookNow = (car) => {
     if (!user) {
       setSelectedCarToBook(car);
-      setIsAuthModalOpen(true); // Buka login jika belum login
+      setIsAuthModalOpen(true);
     } else {
       setSelectedCarToBook(car);
-      setIsBookingModalOpen(true); // Buka modal form booking baru
+      setIsBookingModalOpen(true);
     }
   };
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    // Jika user sebelumnya mencoba klik book now saat belum login, otomatis buka modal booking setelah login sukses
     if (selectedCarToBook) {
       setIsBookingModalOpen(true);
     }
@@ -64,7 +64,9 @@ function App() {
     { title: "", desc: '"Armada keluarga luas dan nyaman. Perjalanan jauh gak berasa lelah."', note: "*Tersedia pilihan sewa harian, bulanan + Driver profesional!" }
   ];
 
+  // Fetch Data Mobil & Supir
   useEffect(() => {
+    // Fetch data mobil
     fetch(`${API_BASE_URL}/api/cars`)
       .then((res) => res.json())
       .then((res) => {
@@ -72,11 +74,22 @@ function App() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Gagal mengambil data:", err);
+        console.error("Gagal mengambil data mobil:", err);
         setLoading(false);
+      });
+
+    // Fetch data supir
+    fetch(`${API_BASE_URL}/api/drivers`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) setDriverData(res.data);
+      })
+      .catch((err) => {
+        console.error("Gagal mengambil data supir:", err);
       });
   }, []);
 
+  // Animasi Banner Teks
   useEffect(() => {
     const interval = setInterval(() => {
       setIsAnimating(true);
@@ -96,11 +109,13 @@ function App() {
           <div className="flex space-x-6 items-center">
             <button onClick={() => setActivePage('home')} className={`transition cursor-pointer ${activePage === 'home' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>HOME</button>
             <button onClick={() => setActivePage('our-cars')} className={`transition cursor-pointer ${activePage === 'our-cars' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>OUR CARS</button>
+            <button onClick={() => setActivePage('drivers')} className={`transition cursor-pointer ${activePage === 'drivers' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>OUR DRIVERS</button>
             <button onClick={() => scrollToSection(locationsRef)} className="hover:text-yellowNeon transition cursor-pointer">OUR LOCATIONS</button>
             <button onClick={() => scrollToSection(contactRef)} className="hover:text-yellowNeon transition cursor-pointer">CONTACT US</button>
-          </div>
+            </div>
 
           <div className="flex items-center space-x-4">
+            
             {user ? (
               <div className="relative group">
                 <button className="flex items-center space-x-3 p-1.5 rounded-full hover:bg-gray-800 transition cursor-pointer">
@@ -157,8 +172,70 @@ function App() {
 
         {/* KONTEN HALAMAN */}
         {activePage === 'our-cars' ? (
-  <Cars carData={carData} loading={loading} onBookNow={handleBookNow} />
-): (
+          <Cars carData={carData} loading={loading} onBookNow={handleBookNow} />
+        ) : activePage === 'drivers' ? (
+          <main className="max-w-7xl mx-auto px-6 py-12">
+            <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-10 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-sm mx-auto">
+              Daftar Mitra Driver VJ
+            </h2>
+
+            {driverData.length === 0 ? (
+              <div className="text-center text-gray-500 py-12">
+                Belum ada data supir yang tersedia di database.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {driverData.map((driver) => {
+                  // Cek apakah supir sedang bertugas (case-insensitive)
+                  const isBusy = driver.status && driver.status.toLowerCase() === 'bertugas';
+                  
+                  return (
+                    <div key={driver.id} className="border-2 border-navyDark rounded-xl overflow-hidden flex flex-col shadow-lg hover:border-gray-700 transition duration-300">
+                      
+                      <div className="bg-navyDark text-white p-6 text-center grow flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-bold text-xl tracking-wide uppercase mb-2">{driver.name}</h3>
+                          <div className="h-28 flex flex-col items-center justify-center my-2 p-4 bg-slate-800/30 rounded-lg border border-gray-800/50 space-y-2">
+                            <span className="text-3xl">👨‍✈️</span>
+                            <span className="text-xs text-yellowNeon font-semibold">Driver Profesional</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4">
+                          <p className="text-xs uppercase text-gray-400">Kontak WhatsApp</p>
+                          <p className="text-sm font-bold text-white mt-0.5">{driver.phone}</p>
+                          <a 
+                            href={`https://wa.me/${driver.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo ${driver.name}, saya ingin memesan layanan supir Anda di VJ Rental Mobil.`)}`}
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-2 px-4 rounded-lg transition duration-300 text-xs tracking-wider shadow text-center block cursor-pointer"
+                          >
+                            CHAT DRIVER 💬
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Bagian Status Dinamis (Merah jika Bertugas, Hijau jika Tersedia) */}
+                      <div className="bg-yellowNeon text-navyDark p-5 text-sm space-y-2 font-semibold border-t border-navyDark">
+                        <div className="flex justify-between items-center border-b border-navyDark/20 pb-1">
+                          <span className="text-xs uppercase font-black">STATUS :</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold text-white ${isBusy ? 'bg-red-600' : 'bg-green-600'}`}>
+                            {driver.status ? driver.status.toUpperCase() : 'TERSEDIA'}
+                          </span>
+                        </div>
+                        <p>• Pengalaman: {driver.experience}</p>
+                        <p className="font-black pt-1 text-xs text-red-700 border-t border-navyDark/10">
+                          Mitra Resmi VJ Rental Mobil
+                        </p>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </main>
+        ) : (
           <div ref={homeRef}>
             {/* KEUNGGULAN */}
             <section className="max-w-7xl mx-auto px-6 pt-16">
@@ -231,7 +308,6 @@ function App() {
                   </div>
                 </div>
                 
-                {/* Box Google Maps Sesuai Link */}
                 <div className="w-full h-64 bg-slate-800/40 border-2 border-gray-800 rounded-2xl relative overflow-hidden group hover:border-yellowNeon/20 transition">
                   <iframe
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3982.0463428935414!2d98.6300977!3d3.5186548!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x303130198031d451%3A0x6b7724219cc9d5e!2sJl.%20Jamin%20Ginting%20No.131%2C%20Kwala%20Bekala%2C%20Kec.%20Medan%20Johor%2C%20Kota%20Medan%2C%20Sumatera%20Utara%2020155!5e0!3m2!1sid!2sid!4v1710000000000!5m2!1sid!2sid"
@@ -252,7 +328,7 @@ function App() {
             <section ref={contactRef} className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-900 text-center scroll-mt-16 mb-12">
               <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-6 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-xs mx-auto">Contact Us</h2>
               <p className="text-gray-400 text-sm mb-8">Punya pertanyaan seputar harga bulanan atau syarat lepas kunci? Hubungi tim kami.</p>
-              <a href={`https://wa.me/6281262772091?text=${encodeURIComponent("Halo Admin Rental Mobil! 👋\n\nSaya tertarik menyewa mobil. Mohon info ketersediaan unit.")}`} target="_blank" rel="noreferrer" className="inline-flex bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl items-center space-x-2 transition shadow-lg text-sm cursor-pointer">
+              <a href={`https://wa.me/6281262772091?text=${encodeURIComponent("Halo Admin Rental Mobil! 👋\n\nI am interested in renting a car. Please let me know the availability.")}`} target="_blank" rel="noreferrer" className="inline-flex bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl items-center space-x-2 transition shadow-lg text-sm cursor-pointer">
                 <span>💬 Hubungi Via WhatsApp Fast Respon</span>
               </a>
             </section>

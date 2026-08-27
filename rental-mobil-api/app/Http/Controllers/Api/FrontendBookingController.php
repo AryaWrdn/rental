@@ -10,10 +10,10 @@ use App\Models\Rental;
 
 class FrontendBookingController extends Controller
 {
-    // Ambil daftar supir yang tersedia untuk dipilih user di React
+    // Ambil semua daftar supir untuk ditampilkan di website React
     public function getDrivers()
     {
-        $drivers = Driver::where('status', 'tersedia')->get();
+        $drivers = Driver::all(); // Mengambil semua data tanpa filter 'tersedia'
         return response()->json([
             'success' => true,
             'data' => $drivers

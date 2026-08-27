@@ -116,7 +116,7 @@ function BookingModal({ isOpen, onClose, car, user, API_BASE_URL }) {
             </div>
           )}
 
-          {rentalType === 'dengan_supir' && (
+      {rentalType === 'dengan_supir' && (
             <div className="space-y-2">
               <label className="block text-white font-bold">Pilih Supir yang Tersedia:</label>
               <select 
@@ -126,11 +126,14 @@ function BookingModal({ isOpen, onClose, car, user, API_BASE_URL }) {
                 className="w-full bg-slate-800 border border-gray-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-yellowNeon"
               >
                 <option value="">-- Pilih Supir --</option>
-                {drivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>
-                    {driver.name} (Pengalaman: {driver.experience} - Telp: {driver.phone})
-                  </option>
-                ))}
+                {drivers
+                  .filter(driver => !driver.status || driver.status.toLowerCase() === 'tersedia')
+                  .map((driver) => (
+                    <option key={driver.id} value={driver.id}>
+                      {driver.name} (Pengalaman: {driver.experience} - Telp: {driver.phone})
+                    </option>
+                  ))
+                }
               </select>
             </div>
           )}
