@@ -18,7 +18,8 @@ class Car extends Model
         'driver_price',
         'status', 
         'user_id',
-        'rental_type'
+        'rental_type',
+        'driver_id'
     ];
     public function user()
     {

@@ -12,13 +12,13 @@ class AuthController extends Controller
     {
         $request->validate([
             'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|unique:users',
+            'username' => 'required|string|max:255|unique:users', // Diubah ke username
             'password' => 'required|string|min:6',
         ]);
 
         $user = User::create([
             'name'     => $request->name,
-            'email'    => $request->email,
+            'username' => $request->username, // Diubah ke username
             'password' => Hash::make($request->password),
         ]);
 
@@ -32,16 +32,16 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'username' => 'required|string', // Diubah ke username
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('username', $request->username)->first(); // Cari berdasarkan username
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email atau password salah'
+                'message' => 'Username atau password salah' // Pesan disesuaikan
             ], 401);
         }
 

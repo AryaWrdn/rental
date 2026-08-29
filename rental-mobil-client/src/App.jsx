@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import logo from './assets/logo-removebg-preview.png';
 import Cars from './Cars';
+import Drivers from './Drivers'; // Pastikan diimport jika dibuat terpisah
 import AuthModal from './AuthModal'; 
 import BookingModal from './BookingModal';
+import Navbar from './Navbar';
+import HeaderBanner from './HeaderBanner';
+import Footer from './Footer';
 
 function App() {
   const [carData, setCarData] = useState([]);
@@ -12,7 +16,6 @@ function App() {
   const [activePage, setActivePage] = useState('home');
   const [driverData, setDriverData] = useState([]);
   
-  // State Modal Booking
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedCarToBook, setSelectedCarToBook] = useState(null);
 
@@ -29,7 +32,6 @@ function App() {
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Handler Tombol Book Now
   const handleBookNow = (car) => {
     if (!user) {
       setSelectedCarToBook(car);
@@ -64,9 +66,7 @@ function App() {
     { title: "", desc: '"Armada keluarga luas dan nyaman. Perjalanan jauh gak berasa lelah."', note: "*Tersedia pilihan sewa harian, bulanan + Driver profesional!" }
   ];
 
-  // Fetch Data Mobil & Supir
   useEffect(() => {
-    // Fetch data mobil
     fetch(`${API_BASE_URL}/api/cars`)
       .then((res) => res.json())
       .then((res) => {
@@ -78,7 +78,6 @@ function App() {
         setLoading(false);
       });
 
-    // Fetch data supir
     fetch(`${API_BASE_URL}/api/drivers`)
       .then((res) => res.json())
       .then((res) => {
@@ -89,7 +88,6 @@ function App() {
       });
   }, []);
 
-  // Animasi Banner Teks
   useEffect(() => {
     const interval = setInterval(() => {
       setIsAnimating(true);
@@ -104,140 +102,30 @@ function App() {
   return (
     <div className="bg-[#07111e] font-sans min-h-screen flex flex-col justify-between text-gray-300">
       <div>
-        {/* NAVBAR */}
-        <nav className="bg-navyDark text-white px-6 py-4 flex justify-between items-center text-sm font-semibold tracking-wider border-b border-gray-800 sticky top-0 z-50 shadow-md">
-          <div className="flex space-x-6 items-center">
-            <button onClick={() => setActivePage('home')} className={`transition cursor-pointer ${activePage === 'home' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>HOME</button>
-            <button onClick={() => setActivePage('our-cars')} className={`transition cursor-pointer ${activePage === 'our-cars' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>OUR CARS</button>
-            <button onClick={() => setActivePage('drivers')} className={`transition cursor-pointer ${activePage === 'drivers' ? 'text-yellowNeon font-bold' : 'hover:text-yellowNeon'}`}>OUR DRIVERS</button>
-            <button onClick={() => scrollToSection(locationsRef)} className="hover:text-yellowNeon transition cursor-pointer">OUR LOCATIONS</button>
-            <button onClick={() => scrollToSection(contactRef)} className="hover:text-yellowNeon transition cursor-pointer">CONTACT US</button>
-            </div>
+        <Navbar 
+          activePage={activePage} 
+          setActivePage={setActivePage} 
+          scrollToSection={scrollToSection} 
+          locationsRef={locationsRef} 
+          contactRef={contactRef} 
+          user={user} 
+          handleLogout={handleLogout} 
+          setIsAuthModalOpen={setIsAuthModalOpen} 
+        />
 
-          <div className="flex items-center space-x-4">
-            
-            {user ? (
-              <div className="relative group">
-                <button className="flex items-center space-x-3 p-1.5 rounded-full hover:bg-gray-800 transition cursor-pointer">
-                  <div className="w-8 h-8 rounded-full bg-yellowNeon text-navyDark flex items-center justify-center font-bold text-xs uppercase shadow">
-                    {user.name.substring(0, 2)}
-                  </div>
-                  <span className="text-xs text-gray-200 group-hover:text-yellowNeon transition font-medium hidden sm:inline-block">{user.name}</span>
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-navyDark border border-gray-800 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-800">
-                    <p className="text-xs font-bold text-white">{user.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
-                  </div>
-                  <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-xs text-red-400 hover:bg-red-500/10 transition cursor-pointer">Logout</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setIsAuthModalOpen(true)} className="bg-yellowNeon text-navyDark text-xs font-extrabold px-4 py-2 rounded-lg hover:bg-white transition cursor-pointer">LOGIN / REGISTER</button>
-            )}
-          </div>
-        </nav>
+        <HeaderBanner 
+          logo={logo} 
+          promoTexts={promoTexts} 
+          currentTextIndex={currentTextIndex} 
+          isAnimating={isAnimating} 
+        />
 
-        {/* HEADER & HERO BANNER */}
-        <header className="bg-[#07111e] shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="bg-[#07111e] px-4 py-2 rounded">
-              <img src={logo} alt="Logo Rental" className="h-18 w-auto" />
-            </div>
-            <div className="flex space-x-6 text-sm text-gray-300">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl">📞</span>
-                <div><p className="text-xs text-gray-400">Hotline</p><p className="font-bold text-white">+6281262772091</p></div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl text-green-500">💬</span>
-                <div><p className="text-xs text-gray-400">WhatsApp</p><p className="font-bold text-green-600">+6281262772091</p></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-navyDark text-white text-center py-14 px-4 relative overflow-hidden border-y border-gray-800 min-h-[200px] flex flex-col justify-center">
-            <div className={`transition-all duration-500 ease-in-out transform ${isAnimating ? 'opacity-0 -translate-y-4 scale-95' : 'opacity-100 translate-y-0 scale-100'}`}>
-              <h1 className="text-3xl md:text-4xl font-black mb-2 tracking-wide uppercase">{promoTexts[currentTextIndex].title}</h1>
-              <p className="text-yellowNeon text-lg font-bold italic tracking-wide max-w-3xl mx-auto">{promoTexts[currentTextIndex].desc}</p>
-              <p className="text-xs text-gray-400 mt-3 font-medium">{promoTexts[currentTextIndex].note}</p>
-            </div>
-            <div className="flex justify-center space-x-2 mt-6">
-              {promoTexts.map((_, idx) => (
-                <div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentTextIndex ? 'w-6 bg-yellowNeon' : 'w-2 bg-gray-600'}`} />
-              ))}
-            </div>
-          </div>
-        </header>
-
-        {/* KONTEN HALAMAN */}
         {activePage === 'our-cars' ? (
           <Cars carData={carData} loading={loading} onBookNow={handleBookNow} />
         ) : activePage === 'drivers' ? (
-          <main className="max-w-7xl mx-auto px-6 py-12">
-            <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-10 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-sm mx-auto">
-              Daftar Mitra Driver VJ
-            </h2>
-
-            {driverData.length === 0 ? (
-              <div className="text-center text-gray-500 py-12">
-                Belum ada data supir yang tersedia di database.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {driverData.map((driver) => {
-                  // Cek apakah supir sedang bertugas (case-insensitive)
-                  const isBusy = driver.status && driver.status.toLowerCase() === 'bertugas';
-                  
-                  return (
-                    <div key={driver.id} className="border-2 border-navyDark rounded-xl overflow-hidden flex flex-col shadow-lg hover:border-gray-700 transition duration-300">
-                      
-                      <div className="bg-navyDark text-white p-6 text-center grow flex flex-col justify-between">
-                        <div>
-                          <h3 className="font-bold text-xl tracking-wide uppercase mb-2">{driver.name}</h3>
-                          <div className="h-28 flex flex-col items-center justify-center my-2 p-4 bg-slate-800/30 rounded-lg border border-gray-800/50 space-y-2">
-                            <span className="text-3xl">👨‍✈️</span>
-                            <span className="text-xs text-yellowNeon font-semibold">Driver Profesional</span>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4">
-                          <p className="text-xs uppercase text-gray-400">Kontak WhatsApp</p>
-                          <p className="text-sm font-bold text-white mt-0.5">{driver.phone}</p>
-                          <a 
-                            href={`https://wa.me/${driver.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo ${driver.name}, saya ingin memesan layanan supir Anda di VJ Rental Mobil.`)}`}
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-extrabold py-2 px-4 rounded-lg transition duration-300 text-xs tracking-wider shadow text-center block cursor-pointer"
-                          >
-                            CHAT DRIVER 💬
-                          </a>
-                        </div>
-                      </div>
-
-                      {/* Bagian Status Dinamis (Merah jika Bertugas, Hijau jika Tersedia) */}
-                      <div className="bg-yellowNeon text-navyDark p-5 text-sm space-y-2 font-semibold border-t border-navyDark">
-                        <div className="flex justify-between items-center border-b border-navyDark/20 pb-1">
-                          <span className="text-xs uppercase font-black">STATUS :</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold text-white ${isBusy ? 'bg-red-600' : 'bg-green-600'}`}>
-                            {driver.status ? driver.status.toUpperCase() : 'TERSEDIA'}
-                          </span>
-                        </div>
-                        <p>• Pengalaman: {driver.experience}</p>
-                        <p className="font-black pt-1 text-xs text-red-700 border-t border-navyDark/10">
-                          Mitra Resmi VJ Rental Mobil
-                        </p>
-                      </div>
-
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </main>
+          <Drivers driverData={driverData} />
         ) : (
           <div ref={homeRef}>
-            {/* KEUNGGULAN */}
             <section className="max-w-7xl mx-auto px-6 pt-16">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
@@ -253,7 +141,6 @@ function App() {
               </div>
             </section>
 
-            {/* MAIN CARDS */}
             <main className="max-w-7xl mx-auto px-6 py-20">
               <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-10 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-sm mx-auto">Pilihan Armada Terbaik</h2>
 
@@ -262,40 +149,54 @@ function App() {
               ) : carData.length === 0 ? (
                 <div className="text-center text-gray-500 py-12">Belum ada data mobil.</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {carData.slice(0, 4).map((car) => (
-                    <div key={car.id} className="border-2 border-navyDark rounded-xl overflow-hidden flex flex-col shadow-lg hover:border-gray-700 transition">
-                      <div className="bg-navyDark text-white p-6 text-center grow flex flex-col justify-between">
-                        <div>
-                          <h3 className="font-bold text-xl tracking-wide uppercase mb-4">{car.name}</h3>
-                          <div className="h-28 flex items-center justify-center my-2 p-2 bg-slate-800/30 rounded-lg border border-gray-800/50">
-                            {car.icon ? <img src={`${API_BASE_URL}/storage/cars/${car.icon}`} alt={car.name} className="max-h-full max-w-full object-contain" /> : <span className="text-5xl">🚗</span>}
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {carData.slice(0, 4).map((car) => (
+                      <div key={car.id} className="border-2 border-navyDark rounded-xl overflow-hidden flex flex-col shadow-lg hover:border-gray-700 transition">
+                        <div className="bg-navyDark text-white p-6 text-center grow flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-xl tracking-wide uppercase mb-4">{car.name}</h3>
+                            <div className="h-28 flex items-center justify-center my-2 p-2 bg-slate-800/30 rounded-lg border border-gray-800/50">
+                              {car.icon ? <img src={`${API_BASE_URL}/storage/cars/${car.icon}`} alt={car.name} className="max-h-full max-w-full object-contain" /> : <span className="text-5xl">🚗</span>}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs uppercase text-gray-400 mt-2">Mulai Dari IDR</p>
+                            <p className="text-2xl font-black text-yellowNeon">{new Intl.NumberFormat('id-ID').format(car.price)} <span className="text-xs text-white">/Hari</span></p>
+                            {car.status === 'disewa' ? (
+                              <button disabled className="mt-4 w-full bg-red-600/20 border border-red-500/40 text-red-400 font-extrabold py-2.5 rounded-lg text-xs tracking-wider cursor-not-allowed">SEDANG DIPAKAI ⛔</button>
+                            ) : (
+                              <button onClick={() => handleBookNow(car)} className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 rounded-lg hover:bg-white transition text-xs tracking-wider cursor-pointer">BOOK NOW &gt;&gt;</button>
+                            )}
                           </div>
                         </div>
-                        <div>
-                          <p className="text-xs uppercase text-gray-400 mt-2">Mulai Dari IDR</p>
-                          <p className="text-2xl font-black text-yellowNeon">{new Intl.NumberFormat('id-ID').format(car.price)} <span className="text-xs text-white">/Hari</span></p>
-                          {car.status === 'disewa' ? (
-                            <button disabled className="mt-4 w-full bg-red-600/20 border border-red-500/40 text-red-400 font-extrabold py-2.5 rounded-lg text-xs tracking-wider cursor-not-allowed">SEDANG DIPAKAI ⛔</button>
-                          ) : (
-                            <button onClick={() => handleBookNow(car)} className="mt-4 w-full bg-yellowNeon text-navyDark font-extrabold py-2.5 rounded-lg hover:bg-white transition text-xs tracking-wider cursor-pointer">BOOK NOW &gt;&gt;</button>
-                          )}
+                        <div className="bg-yellowNeon text-navyDark p-5 text-sm space-y-2 font-semibold border-t border-navyDark">
+                          <p className="font-black border-b border-navyDark/20 pb-1 text-xs">TIPE : {car.type}</p>
+                          <p>• {car.capacity}</p>
+                          <p>• {car.transmission}</p>
+                          <p>• BULANAN : {car.monthly_price}</p>
+                          <p className="font-black pt-1 text-xs text-red-700 border-t border-navyDark/10">+ Driver: IDR {new Intl.NumberFormat('id-ID').format(car.driver_price)}/Hari</p>
                         </div>
                       </div>
-                      <div className="bg-yellowNeon text-navyDark p-5 text-sm space-y-2 font-semibold border-t border-navyDark">
-                        <p className="font-black border-b border-navyDark/20 pb-1 text-xs">TIPE : {car.type}</p>
-                        <p>• {car.capacity}</p>
-                        <p>• {car.transmission}</p>
-                        <p>• BULANAN : {car.monthly_price}</p>
-                        <p className="font-black pt-1 text-xs text-red-700 border-t border-navyDark/10">+ Driver: IDR {new Intl.NumberFormat('id-ID').format(car.driver_price)}/Hari</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+
+                  {/* Tombol Lihat Lebih Banyak */}
+                  <div className="text-center mt-12">
+                    <button
+                      onClick={() => {
+                        setActivePage('our-cars');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="inline-block bg-yellowNeon text-navyDark font-extrabold px-8 py-3 rounded-xl hover:bg-white transition duration-300 text-xs tracking-widest uppercase shadow-lg cursor-pointer"
+                    >
+                      Lihat Lebih Banyak &gt;&gt;
+                    </button>
+                  </div>
+                </>
               )}
             </main>
 
-            {/* LOCATIONS */}
             <section ref={locationsRef} className="max-w-7xl mx-auto px-6 py-20 border-t border-gray-900 scroll-mt-16">
               <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-10 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-sm mx-auto">Our Locations</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -324,7 +225,6 @@ function App() {
               </div>
             </section>
 
-            {/* CONTACT */}
             <section ref={contactRef} className="max-w-4xl mx-auto px-6 py-20 border-t border-gray-900 text-center scroll-mt-16 mb-12">
               <h2 className="text-2xl font-extrabold text-center text-yellowNeon mb-6 uppercase tracking-widest border-b-2 border-yellowNeon/20 pb-3 max-w-xs mx-auto">Contact Us</h2>
               <p className="text-gray-400 text-sm mb-8">Punya pertanyaan seputar harga bulanan atau syarat lepas kunci? Hubungi tim kami.</p>
@@ -336,27 +236,23 @@ function App() {
         )}
       </div>
 
-      {/* FOOTER */}
-      <footer className="bg-navyDark text-gray-400 text-xs py-8 px-6 border-t border-gray-800 w-full">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-          <div><p className="font-bold text-sm text-white mb-1">VJ RENTAL MOBIL</p><p>© 2026 Seluruh Hak Cipta Dilindungi.</p></div>
-          <div className="flex space-x-6">
-            <button onClick={() => setActivePage('home')} className="hover:text-yellowNeon transition cursor-pointer">Syarat & Ketentuan</button>
-            <button onClick={() => setActivePage('home')} className="hover:text-yellowNeon transition cursor-pointer">Kebijakan Privasi</button>
-          </div>
-          <div><p className="text-right text-gray-500">Powered by <span className="text-yellowNeon font-bold">Hero</span> <span className="text-cyan-400 font-bold">Agripa</span></p></div>
-        </div>
-      </footer>
+      <Footer setActivePage={setActivePage} />
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLoginSuccess={handleLoginSuccess} />
       
-      <BookingModal
-        isOpen={isBookingModalOpen}
-        onClose={() => setIsBookingModalOpen(false)}
-        car={selectedCarToBook}
-        user={user}
-        API_BASE_URL={API_BASE_URL}
-      />
+      {isBookingModalOpen && (
+        <BookingModal
+          isOpen={isBookingModalOpen}
+          onClose={() => {
+            setIsBookingModalOpen(false); // Menutup modal
+            setActivePage('home');        // Mengembalikan halaman utama ke home
+          }}
+          car={selectedCarToBook}
+          user={user}
+          API_BASE_URL={API_BASE_URL}
+          setActivePage={setActivePage}
+        />
+      )}
     </div>
   );
 }

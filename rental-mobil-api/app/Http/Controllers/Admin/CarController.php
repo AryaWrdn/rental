@@ -161,4 +161,79 @@ class CarController extends Controller
 
     return response($file, 200)->header('Content-Type', $type);
 }
+
+public function exportExcel()
+{
+    $rentals = Rental::with(['user', 'car', 'driver'])->latest()->get();
+
+    $filename = 'Laporan_Transaksi_Rental_' . date('Y-m-d') . '.xls';
+
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+
+    echo '<table border="1">';
+    
+    // Judul Laporan di bagian atas (colspan disesuaikan jadi 8 kolom)
+    echo '<tr>';
+    echo '<td colspan="8" style="font-size: 14pt; font-weight: bold; text-align: center; background-color: #ffff99; height: 40px;">LAPORAN TRANSAKSI PENYEWAAN MOBIL VJ RENTAL</td>';
+    echo '</tr>';
+    echo '<tr><td colspan="8"></td></tr>';
+
+    // Header Tabel
+    echo '<thead>';
+    echo '<tr style="background-color: #4F81BD; color: #ffffff; font-weight: bold; text-align: center; height: 25px;">';
+    echo '<th style="width: 50px;">No</th>';
+    echo '<th style="width: 150px;">Waktu Transaksi</th>';
+    echo '<th style="width: 180px;">Nama Penyewa</th>';
+    echo '<th style="width: 180px;">Nama Mobil</th>';
+    echo '<th style="width: 130px;">Jenis Layanan</th>';
+    echo '<th style="width: 160px;">Supir Bertugas</th>';
+    echo '<th style="width: 130px;">Durasi Disewa</th>';
+    echo '<th style="width: 150px;">Total Harga</th>';
+    echo '</tr>';
+    echo '</thead>';
+    echo '<tbody>';
+
+    $no = 1;
+    $totalPendapatan = 0;
+
+    foreach ($rentals as $rental) {
+        // Format Teks Durasi
+        $durasi = '-';
+        if ($rental->duration_type == 'daily') {
+            $durasi = $rental->days_count . ' Hari';
+        } elseif ($rental->duration_type == 'weekly') {
+            $durasi = '1 Minggu (7 Hari)';
+        } elseif ($rental->duration_type == 'monthly') {
+            $durasi = '1 Bulan (30 Hari)';
+        }
+
+        // Format Jenis Layanan & Supir
+        $jenisLayanan = ($rental->rental_type == 'dengan_supir') ? 'Dengan Supir' : 'Lepas Kunci';
+        $namaSupir = ($rental->rental_type == 'dengan_supir' && $rental->driver) ? $rental->driver->name : '-';
+
+        $totalPendapatan += $rental->total_price;
+
+        echo '<tr>';
+        echo '<td style="text-align: center;">' . $no++ . '</td>';
+        echo '<td style="text-align: center;">' . $rental->created_at->format('d-m-Y H:i') . '</td>';
+        echo '<td style="text-align: left;">' . ($rental->user->name ?? 'Tidak Diketahui') . '</td>';
+        echo '<td style="text-align: left;">' . ($rental->car->name ?? 'Mobil Dihapus') . '</td>';
+        echo '<td style="text-align: center;">' . $jenisLayanan . '</td>';
+        echo '<td style="text-align: left;">' . $namaSupir . '</td>';
+        echo '<td style="text-align: center;">' . $durasi . '</td>';
+        echo '<td style="text-align: right;">Rp ' . number_format($rental->total_price, 0, ',', '.') . '</td>';
+        echo '</tr>';
+    }
+
+    // Baris Total Pendapatan di bawah (colspan disesuaikan ke 7 agar sejajar dengan kolom total harga di kolom ke-8)
+    echo '<tr style="font-weight: bold; background-color: #DCE6F1; height: 25px;">';
+    echo '<td colspan="7" style="text-align: right; padding-right: 10px;">TOTAL PENDAPATAN:</td>';
+    echo '<td style="text-align: right;">Rp ' . number_format($totalPendapatan, 0, ',', '.') . '</td>';
+    echo '</tr>';
+
+    echo '</tbody>';
+    echo '</table>';
+    exit();
+}
 }
