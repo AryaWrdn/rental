@@ -95,8 +95,6 @@ export default function BookingModal({ car, user, onClose, setActivePage }) {
       formData.append('ktp_photo', ktpFile);
     }
     
-    // Jika backend Anda juga ingin menyimpan bukti pembayaran, tambahkan kolomnya. 
-    // Jika belum ada kolomnya di database, data ini tetap aman dikirim atau diabaikan backend.
     formData.append('payment_proof', paymentProof);
 
     try {
@@ -305,50 +303,75 @@ export default function BookingModal({ car, user, onClose, setActivePage }) {
         )}
 
         {/* STEP 2: UPLOAD BUKTI PEMBAYARAN */}
-        {step === 2 && (
-          <div className="space-y-4 text-xs">
-            <h2 className="text-xl font-extrabold text-yellowNeon mb-1">KONFIRMASI PEMBAYARAN</h2>
-            <p className="text-xs text-gray-400 mb-4">Silakan transfer ke rekening yang dipilih lalu upload bukti pembayaran.</p>
+        {step === 2 && (() => {
+          const currentBank = bankAccounts.find(b => b.name === selectedBank);
 
-            <div className="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-2">
-              <p className="text-gray-400">Metode Pilihan: <span className="font-bold text-yellowNeon">{selectedBank}</span></p>
-              <p className="text-gray-400">Total Tagihan: <span className="font-bold text-green-400 text-sm">{formatRupiah(grandTotal)}</span></p>
-            </div>
+          return (
+            <div className="space-y-4 text-xs">
+              <h2 className="text-xl font-extrabold text-yellowNeon mb-1">KONFIRMASI PEMBAYARAN</h2>
+              <p className="text-xs text-gray-400 mb-4">Silakan transfer ke rekening di bawah ini lalu upload bukti pembayaran.</p>
 
-            <div>
-              <label className="block text-gray-300 font-bold mb-2">Upload Bukti Transfer / Pembayaran:</label>
-              <input 
-                type="file" 
-                required
-                onChange={(e) => setPaymentProof(e.target.files[0])} 
-                className="w-full text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-yellowNeon file:text-navyDark hover:file:bg-white cursor-pointer"
-              />
-            </div>
+              <div className="bg-gray-900 p-4 rounded-xl border border-gray-800 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-400 text-[11px]">Metode Pilihan:</p>
+                    <p className="font-bold text-yellowNeon text-sm">{currentBank?.name}</p>
+                    <p className="text-white font-mono text-xs mt-1">No. Rek: <span className="text-yellow-300 font-bold">{currentBank?.number}</span></p>
+                    <p className="text-gray-400 text-[10px]">{currentBank?.holder}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentBank?.number);
+                      alert(`Nomor rekening ${currentBank?.name} berhasil disalin!`);
+                    }}
+                    className="px-3 py-1.5 bg-yellowNeon text-navyDark text-xs font-extrabold rounded-lg hover:bg-white transition cursor-pointer"
+                  >
+                    📋 Salin
+                  </button>
+                </div>
+                
+                <div className="border-t border-gray-800 pt-2 flex justify-between items-center">
+                  <span className="text-gray-400">Total Tagihan:</span>
+                  <span className="font-bold text-green-400 text-sm">{formatRupiah(grandTotal)}</span>
+                </div>
+              </div>
 
-            <div className="bg-yellowNeon/10 border border-yellowNeon/30 p-3 rounded-lg text-center text-yellowNeon font-medium">
-              💡 Setelah menekan tombol di bawah, data akan disimpan dan Anda akan diarahkan otomatis ke WhatsApp Admin bersama bukti transfer.
-            </div>
+              <div>
+                <label className="block text-gray-300 font-bold mb-2">Upload Bukti Transfer / Pembayaran:</label>
+                <input 
+                  type="file" 
+                  required
+                  onChange={(e) => setPaymentProof(e.target.files[0])} 
+                  className="w-full text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-yellowNeon file:text-navyDark hover:file:bg-white cursor-pointer"
+                />
+              </div>
 
-            {/* Tombol Aksi Step 2 */}
-            <div className="flex space-x-3 pt-2">
-              <button 
-                type="button" 
-                onClick={() => setStep(1)}  
-                className="w-1/2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition cursor-pointer"
-              >
-                ⬅️ Kembali
-              </button>
-              <button 
-                type="button"
-                disabled={loading}
-                onClick={handleFinalSubmit}
-                className="w-1/2 bg-yellowNeon hover:bg-white text-navyDark font-extrabold py-2.5 rounded-lg transition cursor-pointer shadow-lg disabled:opacity-50"
-              >
-                {loading ? 'Menyimpan...' : 'Kirim Bukti ke WA 🚀'}
-              </button>
+              <div className="bg-yellowNeon/10 border border-yellowNeon/30 p-3 rounded-lg text-center text-yellowNeon font-medium">
+                💡 Setelah menekan tombol di bawah, data akan disimpan dan Anda akan diarahkan otomatis ke WhatsApp Admin bersama bukti transfer.
+              </div>
+
+              {/* Tombol Aksi Step 2 */}
+              <div className="flex space-x-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setStep(1)}  
+                  className="w-1/2 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition cursor-pointer"
+                >
+                  ⬅️ Kembali
+                </button>
+                <button 
+                  type="button"
+                  disabled={loading}
+                  onClick={handleFinalSubmit}
+                  className="w-1/2 bg-yellowNeon hover:bg-white text-navyDark font-extrabold py-2.5 rounded-lg transition cursor-pointer shadow-lg disabled:opacity-50"
+                >
+                  {loading ? 'Menyimpan...' : 'Kirim Bukti ke WA 🚀'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
       </div>
     </div>
